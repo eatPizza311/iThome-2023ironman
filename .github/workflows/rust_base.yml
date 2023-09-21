@@ -1,0 +1,39 @@
+name: Rust CI/CD workflow
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    # The branches below must be a subset of the branches above
+    branches: [ "main" ]
+  schedule:
+    - cron: '0 6 * * 1'
+
+jobs:
+  rust-ci-cd-basic:
+    name: Run Rust CI/CD basic workflow
+    runs-on: ubuntu-latest
+      
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Install Rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          components: clippy, rustfmt
+          override: true
+
+      - name: Check Rust versions
+        run: make version
+    
+      - name: Format
+        run: make format
+        
+      - name: Lint
+        run: make lint
+        
+      - name: Test
+        run: cargo test --verbose
