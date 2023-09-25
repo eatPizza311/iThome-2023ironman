@@ -2,10 +2,14 @@ use leptos::*;
 use leptos_meta::*;
 use leptos_router::*;
 
+use crate::model::conversation::Conversation;
+
 #[component]
 pub fn App(cx: Scope) -> impl IntoView {
     // Provides context that manages stylesheets, titles, meta tags, etc.
     provide_meta_context(cx);
+
+    let (conversaton, set_conversaton) = create_signal(cx, Conversation::new());
 
     view! { cx,
         // injects a stylesheet into the document <head>
