@@ -1,4 +1,5 @@
 pub mod app;
+pub mod conversation;
 use cfg_if::cfg_if;
 
 cfg_if! {
