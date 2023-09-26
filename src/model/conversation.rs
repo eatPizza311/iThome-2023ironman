@@ -2,13 +2,13 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Conversation {
-    pub message: Vec<Message>,
+    pub messages: Vec<Message>,
 }
 
 impl Conversation {
     pub fn new() -> Conversation {
         Conversation {
-            message: Vec::new(),
+            messages: Vec::new(),
         }
     }
 }
