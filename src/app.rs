@@ -27,7 +27,7 @@ pub fn App() -> impl IntoView {
         <Stylesheet id="leptos" href="/pkg/iron_llama.css"/>
 
         // sets the document title
-        <Title text="Welcome to Leptos"/>
+        <Title text="Iron LLaMa"/>
 
         // <MessageHistory conversation/>
         // <MessageInputField send/>
