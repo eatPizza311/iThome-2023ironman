@@ -14,11 +14,14 @@ async fn main() -> std::io::Result<()> {
     // Generate the list of routes in your Leptos App
     let routes = generate_route_list(|| view! { <App/> });
 
+    let model = web::Data::new(get_language_model());
+
     HttpServer::new(move || {
         let leptos_options = &conf.leptos_options;
         let site_root = &leptos_options.site_root;
 
         App::new()
+            .app_data(model.clone())
             .route("/api/{tail:.*}", leptos_actix::handle_server_fns())
             // serve JS/WASM/CSS from `pkg`
             .service(Files::new("/pkg", format!("{site_root}/pkg")))
@@ -64,7 +67,7 @@ cfg_if! {
                 Default::default(),
                 // load progress callback
                 llm::load_progress_callback_stdout
-            ).unwrap_or_else(|err| panic!("Failed to load model: {err}"));
+            ).unwrap_or_else(|err| panic!("Failed to load model: {err}"))
         }
     }
 }
