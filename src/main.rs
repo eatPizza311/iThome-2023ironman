@@ -59,9 +59,9 @@ cfg_if! {
             llm::load::<Llama>(
                 // path to GGML file
                 &PathBuf::from(&model_path),
-                /// Read the vocabulary from the model if available, and use a simplistic tokenizer.
-                /// This is easy to use, but may not be the best choice for your use case, and is not
-                /// guaranteed to be available for all models.
+                // Read the vocabulary from the model if available, and use a simplistic tokenizer.
+                // This is easy to use, but may not be the best choice for your use case, and is not
+                // guaranteed to be available for all models.
                 llm::TokenizerSource::Embedded,
                 // llm::ModelParameters
                 Default::default(),
