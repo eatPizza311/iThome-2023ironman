@@ -35,6 +35,9 @@ ssr = [
   "leptos_router/ssr",
 ]
 
+[profile.dev.package.ggml-sys]
+opt-level = 3
+
 # Defines a size-optimized profile for the WASM bundle in release mode
 [profile.wasm-release]
 inherits = "release"
