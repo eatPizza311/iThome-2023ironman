@@ -1,9 +1,13 @@
+mod components;
+
 use leptos::*;
 use leptos_meta::*;
 use leptos_router::*;
 
 use crate::api::converse;
 use crate::model::conversation::{Conversation, Message};
+use components::history::MessageHistory;
+use components::input::MessageInputField;
 
 #[component]
 pub fn App() -> impl IntoView {
@@ -51,7 +55,7 @@ pub fn App() -> impl IntoView {
         // sets the document title
         <Title text="Iron LLaMa"/>
 
-        // <MessageHistory conversation/>
-        // <MessageInputField send/>
+        <MessageHistory conversation/>
+        <MessageInputField send/>
     }
 }
