@@ -1,3 +1,5 @@
+use cfg_if::cfg_if;
+
 #[cfg(feature = "ssr")]
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
@@ -35,6 +37,36 @@ async fn main() -> std::io::Result<()> {
     .bind(&addr)?
     .run()
     .await
+}
+
+cfg_if! {
+    if #[cfg(feature = "ssr")] {
+        use std::env;
+
+        use actix_web::*;
+        use dotenv::dotenv;
+        use llm::models::Llama;
+
+        fn get_language_model() -> Llama {
+            use std::path::PathBuf;
+            dotenv().ok();
+            let model_path = env::var("MODEL_PATH").expect("MODEL_PATH cannot be empty");
+
+            // load a GGML model from disk
+            llm::load::<Llama>(
+                // path to GGML file
+                &PathBuf::from(&model_path),
+                /// Read the vocabulary from the model if available, and use a simplistic tokenizer.
+                /// This is easy to use, but may not be the best choice for your use case, and is not
+                /// guaranteed to be available for all models.
+                llm::TokenizerSource::Embedded,
+                // llm::ModelParameters
+                Default::default(),
+                // load progress callback
+                llm::load_progress_callback_stdout
+            ).unwrap_or_else(|err| panic!("Failed to load model: {err}"));
+        }
+    }
 }
 
 #[cfg(feature = "ssr")]
