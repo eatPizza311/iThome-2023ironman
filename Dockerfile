@@ -1,51 +1,53 @@
-# syntax=docker/dockerfile:1
-
-# Comments are provided throughout this file to help you get started.
-# If you need more help, visit the Dockerfile reference guide at
-# https://docs.docker.com/engine/reference/builder/
-
-################################################################################
-# Create a stage for building the application.
-
-ARG RUST_VERSION=1.75.0-nightly
+# App 名稱
 ARG APP_NAME=iron_llama
-FROM rust:${RUST_VERSION}-slim-bullseye AS build
+# 要複製進最終映像檔的模型名稱
+ARG MODEL_NAME=Taiwan-LLaMa-13b-1.0.ggmlv3.q2_K.bin
+
+# 建置階段，使用 Rust 每夜版
+FROM rustlang/rust:nightly-bookworm-slim as build
 ARG APP_NAME
+
+# 指定工作位址並將所有東西複製到容器中
 WORKDIR /app
+COPY . .
 
-# Build the application.
-# Leverage a cache mount to /usr/local/cargo/registry/
-# for downloaded dependencies and a cache mount to /app/target/ for 
-# compiled dependencies which will speed up subsequent builds.
-# Leverage a bind mount to the src directory to avoid having to copy the
-# source code into the container. Once built, copy the executable to an
-# output directory before the cache mounted /app/target is unmounted.
-RUN --mount=type=bind,source=src,target=src \
-    --mount=type=bind,source=Cargo.toml,target=Cargo.toml \
-    --mount=type=bind,source=Cargo.lock,target=Cargo.lock \
-    --mount=type=cache,target=/app/target/ \
-    --mount=type=cache,target=/usr/local/cargo/registry/ \
-    <<EOF
-set -e
-cargo build --locked --release
-cp ./target/release/$APP_NAME /bin/server
-EOF
+# 安裝需要的工具
+RUN apt-get update
+RUN apt-get install -y pkg-config openssl libssl-dev curl wget
 
-################################################################################
-# Create a new stage for running the application that contains the minimal
-# runtime dependencies for the application. This often uses a different base
-# image from the build stage where the necessary files are copied from the build
-# stage.
-#
-# The example below uses the debian bullseye image as the foundation for running the app.
-# By specifying the "bullseye-slim" tag, it will also use whatever happens to be the
-# most recent version of that tag when you build your Dockerfile. If
-# reproducability is important, consider using a digest
-# (e.g., debian@sha256:ac707220fbd7b67fc19b112cee8170b41a9e97f703f588b2cdbbcdcecdd8af57).
-FROM debian:bullseye-slim AS final
+# 加上 WASM target
+RUN rustup target add wasm32-unknown-unknown
 
-# Create a non-privileged user that the app will run under.
-# See https://docs.docker.com/develop/develop-images/dockerfile_best-practices/#user
+# 安裝 cargo-binstall, 這可以使安裝其它 cargo 擴充套件如 cargo-leptos 更容易
+RUN wget https://github.com/cargo-bins/cargo-binstall/releases/latest/download/cargo-binstall-x86_64-unknown-linux-musl.tgz
+RUN tar -xvf cargo-binstall-x86_64-unknown-linux-musl.tgz
+RUN cp cargo-binstall /usr/local/cargo/bin
+# 安裝 cargo-leptos
+RUN cargo binstall cargo-leptos -y
+
+# 建置 app
+RUN cargo leptos build --release -vv
+
+# 最終階段
+FROM rustlang/rust:nightly-bookworm-slim as final
+ARG APP_NAME
+ARG MODEL_NAME
+
+RUN apt-get update && apt-get install -y openssl
+
+WORKDIR /app
+# 把模型複製到 model
+COPY --from=build /app/$MODEL_NAME model
+# 把伺服器的二進制檔複製到 server 
+COPY --from=build /app/target/server/release/$APP_NAME server
+# 把 包含了 JS/WASM/CSS, etc. 的 /target/site 複製過來
+COPY --from=build /app/target/site target/site
+
+# 設定環境變數
+ENV MODEL_PATH="/app/model"
+ENV LEPTOS_SITE_ADDR="0.0.0.0:3000"
+
+# 設定使用者
 ARG UID=10001
 RUN adduser \
     --disabled-password \
@@ -55,13 +57,16 @@ RUN adduser \
     --no-create-home \
     --uid "${UID}" \
     appuser
+
+# 更改權限
+RUN chown -R appuser:appuser /app
+RUN chmod -R 755 /app
+
+# 切換使用者
 USER appuser
 
-# Copy the executable from the "build" stage.
-COPY --from=build /bin/server /bin/
-
-# Expose the port that the application listens on.
+# 暴露端口
 EXPOSE 3000
 
-# What the container should run when it is started.
-CMD ["/bin/server"]
+# 跑起來！
+CMD ["/app/server"]
