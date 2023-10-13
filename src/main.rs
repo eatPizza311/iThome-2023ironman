@@ -46,7 +46,6 @@ cfg_if! {
     if #[cfg(feature = "ssr")] {
         use std::env;
 
-        use actix_web::*;
         use dotenv::dotenv;
         use llm::models::Llama;
 

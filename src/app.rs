@@ -2,7 +2,6 @@ mod components;
 
 use leptos::*;
 use leptos_meta::*;
-use leptos_router::*;
 
 use crate::api::converse;
 use crate::model::conversation::{Conversation, Message};
